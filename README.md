@@ -25,7 +25,8 @@ Este projeto tem como objetivo capturar e analisar o comportamento de usuários 
 | Rastreamento Ocular      | GazeTracking, MediaPipe         |
 | Visualização de Dados    | matplotlib, pandas, numpy       |
 
-* FER só funciona com python 3.6
+* FER só funciona com python 3.6 || 3.10
+* FER precisa do moviepy==1.0.3, tensorflow>=1.7 opencv-contrib-python==3.3.0.9
 
 ---
 ### Estrutura de Diretórios
