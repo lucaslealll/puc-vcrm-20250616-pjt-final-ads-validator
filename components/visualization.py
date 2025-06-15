@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def gerar_graficos():
+def generate_graphs():
     # Emoções
     df_emotion = pd.read_csv("data/emotion_analysis.csv")
     emotion_counts = df_emotion["emotion"].value_counts()
