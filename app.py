@@ -1,3 +1,5 @@
+import os
+import subprocess
 import streamlit as st
 import cv2
 import tempfile
@@ -6,8 +8,19 @@ from components import *
 from streamlit_webrtc import webrtc_streamer
 import time
 
-CAM_VIDEO_PATH = "data/webcam_output.mp4"
+
+def del_files(dir):
+    for file in os.listdir(dir):
+        file_path = os.path.join(dir, file)
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+
+
+del_files("data")
+del_files("out")
+
 OUT_DIR_PATH = "out"
+CAM_VIDEO_PATH = f"{OUT_DIR_PATH}/webcam_output.mp4"
 
 st.set_page_config(layout="wide")
 st.title("AVBER - Ads Validation by Emotion Recognition")
@@ -25,6 +38,8 @@ if "CANCELED_ANALYSIS" not in st.session_state:
     st.session_state["CANCELED_ANALYSIS"] = False
 if "LIVE_EMOTION_ON" not in st.session_state:
     st.session_state["LIVE_EMOTION_ON"] = False
+if "GENERATE_REPORT" not in st.session_state:
+    st.session_state["GENERATE_REPORT"] = False
 
 # ====== LIVE EMOTION TEST ======= #
 if not st.session_state["LIVE_EMOTION_ON"]:
@@ -197,10 +212,11 @@ if (
         with col_info:
             st.markdown("🗹 Generating graphs... 100%")
 
-        st.image(f"{OUT_DIR_PATH}/emotion_plot.png", caption="Emotion Chart", use_column_width=True)
-        st.image(f"{OUT_DIR_PATH}/heatmap.png", caption="Gaze Heatmap", use_column_width=True)
+        # st.image(f"{OUT_DIR_PATH}/emotion_plot.png", caption="Emotion Chart", use_column_width=True)
+        # st.image(f"{OUT_DIR_PATH}/heatmap.png", caption="Gaze Heatmap", use_column_width=True)
         status_placeholder.markdown("🗹 Analysis completed!")
 
         st.session_state["RUNNING_ANALYSIS"] = False
         st.session_state["CONCLUDED_ANALYSIS"] = True
-        # progress_bar.progress(0)
+
+        subprocess.run(["python", "report.py"], capture_output=True, text=True)
