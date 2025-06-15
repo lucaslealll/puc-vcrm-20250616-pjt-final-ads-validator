@@ -6,10 +6,13 @@ from components import *
 from streamlit_webrtc import webrtc_streamer
 import time
 
+CAM_VIDEO_PATH = "data/webcam_output.mp4"
+OUT_DIR_PATH = "out"
+
 st.set_page_config(layout="wide")
 st.title("AVBER - Ads Validation by Emotion Recognition")
 
-# Inicializa estados na sessão
+# Initialize session states
 if "TMP_VIDEO_PATH" not in st.session_state:
     st.session_state["TMP_VIDEO_PATH"] = None
 if "RUNNING_ANALYSIS" not in st.session_state:
@@ -25,12 +28,12 @@ if "LIVE_EMOTION_ON" not in st.session_state:
 
 # ====== LIVE EMOTION TEST ======= #
 if not st.session_state["LIVE_EMOTION_ON"]:
-    if st.button("Live Emotion Map", type="primary"):
+    if st.button("🗭 Live Emotion Map", type="primary"):
         st.session_state["LIVE_EMOTION_ON"] = True
-        st.rerun()  # reexecuta para mostrar o webrtc_streamer
+        st.rerun()  # rerun to show webrtc_streamer
 else:
-    # Inicia o stream
-    st.markdown("Live Emotion Test...")
+    # Start the stream
+    st.markdown("🗭 Live Emotion Test...")
     webrtc_streamer(
         key="emotion-detector",
         video_frame_callback=live_emotion_map,
@@ -40,43 +43,68 @@ else:
         },
     )
 
-    # Mostra o botão "Parar"
-    if st.button("ⓧ Encerrar teste", type="tertiary"):
+    # Show the "Stop" button
+    if st.button("ⓧ End Test", type="tertiary"):
         st.session_state["LIVE_EMOTION_ON"] = False
-        st.rerun()  # reexecuta para voltar ao botão inicial
+        st.rerun()  # rerun to return to the initial button
+
+# ====== LIVE GAZE TEST ======= #
+if not st.session_state.get("LIVE_GAZE_ON", False):
+    if st.button("👁 Live Gaze Map", type="primary"):
+        st.session_state["LIVE_GAZE_ON"] = True
+        st.rerun()  # rerun to show webrtc_streamer
+else:
+    st.markdown("👁 Live Gaze Tracking...")
+
+    webrtc_streamer(
+        key="gaze-tracker",
+        video_frame_callback=live_gaze_map,
+        media_stream_constraints={
+            "video": {"width": {"ideal": 1280}, "height": {"ideal": 720}, "frameRate": {"ideal": 60}},
+            "audio": False,
+        },
+    )
+
+    # Button to end the gaze tracking
+    if st.button("ⓧ End Gaze Tracking", type="tertiary"):
+        st.session_state["LIVE_GAZE_ON"] = False
+        st.rerun()
 
 
-# Upload de vídeo
-video_file = st.file_uploader("Escolha o vídeo da propaganda a ser avaliada.", type=["mp4"])
+# Video upload
+video_file = st.file_uploader("Choose the ad video to be evaluated.", type=["mp4"])
 if video_file:
-    st.session_state["TMP_VIDEO_PATH"] = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
-    with open(st.session_state["TMP_VIDEO_PATH"], "wb") as f:
+    AD_VIDEO_PATH = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4").name
+    st.session_state["TMP_VIDEO_PATH"] = AD_VIDEO_PATH
+
+    with open(AD_VIDEO_PATH, "wb") as f:
         f.write(video_file.read())
-    st.markdown("🗹 Vídeo carregado.")
+
+    st.markdown(f"🗹 Video uploaded")
 
 
-# Se vídeo carregado
+# If video is uploaded
 if st.session_state["TMP_VIDEO_PATH"]:
-    col_video, col_info = st.columns([2, 1])  # Layout estilo YouTube
+    col_video, col_info = st.columns([2, 1])  # YouTube style layout
 
     with col_info:
-        # Botões de controle
+        # Control buttons
         if not st.session_state["RUNNING_ANALYSIS"] and not st.session_state["CONCLUDED_ANALYSIS"]:
-            if st.button("Iniciar Análise", icon=":material/play_circle:"):
+            if st.button("Start Analysis", icon=":material/play_circle:"):
                 st.session_state["RUNNING_ANALYSIS"] = True
                 st.session_state["STOP_ANALYSIS"] = False
                 st.session_state["CANCELED_ANALYSIS"] = False
                 st.rerun()
 
         elif st.session_state["RUNNING_ANALYSIS"]:
-            if st.button("Cancelar Análise", icon=":material/stop_circle:", type="primary"):
+            if st.button("Cancel Analysis", icon=":material/stop_circle:", type="primary"):
                 st.session_state["CANCELED_ANALYSIS"] = True
                 st.session_state["RUNNING_ANALYSIS"] = False
                 st.rerun()
 
         elif st.session_state["CONCLUDED_ANALYSIS"]:
-            st.success("Análise finalizada.")
-            if st.button("Nova Análise", icon=":material/refresh:"):
+            st.success("Analysis completed.")
+            if st.button("New Analysis", icon=":material/refresh:"):
                 st.session_state.update(
                     {
                         "RUNNING_ANALYSIS": False,
@@ -88,16 +116,16 @@ if st.session_state["TMP_VIDEO_PATH"]:
                 )
                 st.rerun()
 
-        # Espaço para status e progresso
+        # Space for status and progress
         status_placeholder = st.empty()
         progress_bar = st.progress(0)
 
-    # Coluna de vídeo
+    # Video column
     with col_video:
         if st.session_state["RUNNING_ANALYSIS"]:
             st.video(st.session_state["TMP_VIDEO_PATH"], autoplay=True)
 
-# Lógica da análise sincronizada com vídeo
+# Logic for analysis synchronized with video
 if (
     st.session_state["RUNNING_ANALYSIS"]
     and not st.session_state["CANCELED_ANALYSIS"]
@@ -105,18 +133,18 @@ if (
 ):
     cap_video = cv2.VideoCapture(st.session_state["TMP_VIDEO_PATH"])
     cap_webcam = cv2.VideoCapture(0)
-    out = cv2.VideoWriter("data/webcam_output.avi", cv2.VideoWriter_fourcc(*"XVID"), 20.0, (640, 480))
+    out = cv2.VideoWriter(CAM_VIDEO_PATH, cv2.VideoWriter_fourcc(*"mp4v"), 20.0, (640, 480))
 
     total_frames = int(cap_video.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = cap_video.get(cv2.CAP_PROP_FPS)
-    frame_duration = 1.0 / fps if fps > 0 else 1.0 / 25  # fallback padrão
+    frame_duration = 1.0 / fps if fps > 0 else 1.0 / 25  # default fallback
 
     current_frame = 0
     prev_time = time.time()
 
     while cap_video.isOpened():
         if st.session_state["CANCELED_ANALYSIS"]:
-            status_placeholder.markdown("🗷 Análise cancelada pelo usuário.")
+            status_placeholder.markdown("🗷 Analysis canceled by the user.")
             break
 
         ret_vid, frame_vid = cap_video.read()
@@ -128,12 +156,12 @@ if (
         out.write(frame_cam)
         current_frame += 1
 
-        # Atualiza progresso e status
+        # Update progress and status
         progress = current_frame / total_frames
         progress_bar.progress(progress)
-        status_placeholder.markdown(f"● Capturando reações... {int(progress * 100)}%")
+        status_placeholder.markdown(f"● Capturing reactions... {int(progress * 100)}%")
 
-        # Aguarda o tempo correto para o próximo frame (sincronizado com FPS)
+        # Wait the correct time for the next frame (synchronized with FPS)
         elapsed = time.time() - prev_time
         sleep_time = frame_duration - elapsed
         if sleep_time > 0:
@@ -141,9 +169,9 @@ if (
         prev_time = time.time()
 
     with col_info:
-        st.markdown(f"🗹 Capturando reações... 100%")
+        st.markdown(f"🗹 Capturing reactions... 100%")
 
-    # Libera recursos
+    # Release resources
     cap_video.release()
     cap_webcam.release()
     out.release()
@@ -152,26 +180,26 @@ if (
 
         def update_progress(progress):
             percent = int(progress * 100)
-            status_placeholder.markdown(f"🗘 Processando emoções... {percent}%")
+            status_placeholder.markdown(f"🗘 Processing emotions... {percent}%")
             progress_bar.progress(percent)
 
-        process_emotions("data/webcam_output.avi", progress_callback=update_progress)
+        process_emotions(CAM_VIDEO_PATH, AD_VIDEO_PATH, progress_callback=update_progress)
         with col_info:
-            st.markdown(f"🗹 Processando emoções... 100%")
+            st.markdown(f"🗹 Processing emotions... 100%")
 
-        status_placeholder.markdown("🗘 Processando rastreio ocular...")
-        track_gaze("data/webcam_output.avi")
+        status_placeholder.markdown("🗘 Processing gaze tracking...")
+        track_gaze(CAM_VIDEO_PATH)
         with col_info:
-            st.markdown("🗹 Processando rastreio ocular... 100%")
+            st.markdown("🗹 Processing gaze tracking... 100%")
 
-        status_placeholder.markdown("🗘 Gerando gráficos...")
-        gerar_graficos()
+        status_placeholder.markdown("🗘 Generating graphs...")
+        generate_graphs()
         with col_info:
-            st.markdown("🗹 Gerando gráficos... 100%")
+            st.markdown("🗹 Generating graphs... 100%")
 
-        st.image("out/emotion_plot.png", caption="Gráfico de Emoções", use_column_width=True)
-        st.image("out/heatmap.png", caption="Heatmap Ocular", use_column_width=True)
-        status_placeholder.markdown("🗹 Análise concluída!")
+        st.image(f"{OUT_DIR_PATH}/emotion_plot.png", caption="Emotion Chart", use_column_width=True)
+        st.image(f"{OUT_DIR_PATH}/heatmap.png", caption="Gaze Heatmap", use_column_width=True)
+        status_placeholder.markdown("🗹 Analysis completed!")
 
         st.session_state["RUNNING_ANALYSIS"] = False
         st.session_state["CONCLUDED_ANALYSIS"] = True
