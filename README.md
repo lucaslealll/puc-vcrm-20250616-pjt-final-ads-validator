@@ -1,12 +1,14 @@
-<div style="text-align: center;">
-    <h1>
-        <img src="assets/PUCMinas.ico" width="100" height="100"/>
-        <br>
-        <b>Visão Computacional e Realidade Misturada</b>
-    </h1> 
-    <h2><b>AVBER - Ads Validator By Emotional Recognition:</b> <i>Análise de campanhas publicitárias integrada de respostas visuais e emocionais sob a perspectiva cognitiva do espectador</i><h2>
-</div>
+<p align="center">
+    <img src="assets/PUCMinas.ico" width="100" height="100"/>
+    <br>
+    <b>Visão Computacional e Realidade Misturada</b>
+</p>
 
+<p align="center">
+    <b>AVBER - Ads Validator By Emotional Recognition:</b> <i>Integrated analysis of advertising campaigns based on visual and emotional responses from the viewer's cognitive perspective</i>
+</p>
+
+---
 ### **Descrição do Projeto**
 - [Leia a descrição completa no Google Docs](https://docs.google.com/document/d/16zR-Yyn3FRSrZcztXzChu3yRixsqHoV_HX5oCLeXQ1Q).
 
