@@ -1,5 +1,6 @@
 <p align="center">
-    <img src="assets/PUCMinas.ico" width="100" height="100"/>
+    <img src="assets/PUCMinas.ico" height="100"/>
+    <img src="assets/avber.png" height="100"/>
     <br>
     <b>Visão Computacional e Realidade Misturada</b>
 </p>
