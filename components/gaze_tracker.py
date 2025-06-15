@@ -1,10 +1,12 @@
+import av
 from .gaze_tracking import GazeTracking
 import cv2
 import pandas as pd
 
+GAZE = GazeTracking()
+
 
 def track_gaze(video_path):
-    gaze = GazeTracking()
     cap = cv2.VideoCapture(video_path)
     data = []
     frame_num = 0
@@ -15,16 +17,16 @@ def track_gaze(video_path):
         if not ret:
             break
 
-        gaze.refresh(frame)
+        GAZE.refresh(frame)
         timestamp = frame_num / fps
 
-        if gaze.is_blinking():
+        if GAZE.is_blinking():
             direction = "blinking"
-        elif gaze.is_right():
+        elif GAZE.is_right():
             direction = "right"
-        elif gaze.is_left():
+        elif GAZE.is_left():
             direction = "left"
-        elif gaze.is_center():
+        elif GAZE.is_center():
             direction = "center"
         else:
             direction = "unknown"
@@ -35,3 +37,23 @@ def track_gaze(video_path):
     cap.release()
     df = pd.DataFrame(data)
     df.to_csv("data/gaze_data.csv", index=False)
+
+
+def live_gaze_map(frame):
+    img = frame.to_ndarray(format="bgr24")
+    GAZE.refresh(img)
+
+    # Exemplo: checando para onde o usuário está olhando
+    if GAZE.is_right():
+        direction = "Looking right"
+    elif GAZE.is_left():
+        direction = "Looking left"
+    elif GAZE.is_center():
+        direction = "Looking center"
+    else:
+        direction = "Undetected"
+
+    # Desenha texto no frame
+    cv2.putText(img, direction, (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+    return av.VideoFrame.from_ndarray(img, format="bgr24")
