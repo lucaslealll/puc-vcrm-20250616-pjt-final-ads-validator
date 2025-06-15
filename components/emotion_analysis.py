@@ -1,42 +1,79 @@
 from fer import FER
-import pandas as pd
-import cv2
 import av
+import cv2
+import os
+import pandas as pd
+
+DATA_OUT_PATH = "data"
+FRAME_OUT_PATH = DATA_OUT_PATH  # "data/frames"
 
 
-def process_emotions(video_path, progress_callback=None):
+def process_emotions(video_path_cam, video_path_ad, progress_callback=None):
     detector = FER(mtcnn=True)
-    cap = cv2.VideoCapture(video_path)
+    cap_face = cv2.VideoCapture(video_path_cam)
+    cap_source = cv2.VideoCapture(video_path_ad)
 
     data = []
     frame_num = 0
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps = cap.get(cv2.CAP_PROP_FPS)
+    total_frames = int(cap_face.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = cap_face.get(cv2.CAP_PROP_FPS)
+
+    # Pastas para salvar os frames
+    os.makedirs(FRAME_OUT_PATH, exist_ok=True)
+
+    # Emocoes ja capturadas
+    first_occurrences = {}
 
     while True:
-        ret, frame = cap.read()
-        if not ret:
+        ret_face, frame_face = cap_face.read()
+        if not ret_face:
             break
 
-        result = detector.detect_emotions(frame)
         timestamp = frame_num / fps
 
+        # Lê frame do vídeo assistido no mesmo instante
+        cap_source.set(cv2.CAP_PROP_POS_MSEC, timestamp * 1000)
+        ret_source, frame_source = cap_source.read()
+
+        result = detector.detect_emotions(frame_face)
+
         if result:
-            dominant = max(result[0]["emotions"], key=result[0]["emotions"].get)
+            emotions = result[0]["emotions"]
+            dominant = max(emotions, key=emotions.get)
+            confidence = int(emotions[dominant] * 100)
         else:
             dominant = "none"
+            confidence = 0
 
-        data.append({"frame": frame_num, "time": timestamp, "emotion": dominant})
+        # Salvar primeira ocorrência
+        if dominant != "none" and dominant not in first_occurrences:
+            first_occurrences[dominant] = timestamp
+            ts_ms = int(timestamp * 1000)
+            filename_suffix = f"{ts_ms}ms_{dominant}_{confidence}"
+
+            # Frame da webcam
+            webcam_filename = f"{FRAME_OUT_PATH}/cam_{filename_suffix}.jpg"
+            cv2.imwrite(webcam_filename, frame_face)
+
+            # Frame do vídeo assistido
+            if ret_source:
+                source_filename = f"{FRAME_OUT_PATH}/ad_{filename_suffix}.jpg"
+                cv2.imwrite(source_filename, frame_source)
+
+        data.append({"frame": frame_num, "time": timestamp, "emotion": dominant, "confidence": confidence})
+
         frame_num += 1
 
-        # Atualiza progresso se callback foi passado
         if progress_callback is not None and total_frames > 0:
-            progress = frame_num / total_frames
-            progress_callback(progress)
+            progress_callback(frame_num / total_frames)
 
-    cap.release()
+    cap_face.release()
+    cap_source.release()
+
+    # Salva CSV com os dados
     df = pd.DataFrame(data)
-    df.to_csv("data/emotion_analysis.csv", index=False)
+    os.makedirs(DATA_OUT_PATH, exist_ok=True)
+    df.to_csv(f"{DATA_OUT_PATH}/emotion_analysis.csv", index=False)
 
 
 def live_emotion_map(frame: av.VideoFrame) -> av.VideoFrame:
