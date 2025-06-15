@@ -1,6 +1,13 @@
 from .emotion_analysis import process_emotions, live_emotion_map
-from .gaze_tracker import track_gaze
+from .gaze_tracker import track_gaze, live_gaze_map
 from .utils import clear_terminal
-from .visualization import gerar_graficos
+from .visualization import generate_graphs
 
-__all__ = ["clear_terminal", "gerar_graficos", "process_emotions", "track_gaze", "live_emotion_map"]
+__all__ = [
+    "clear_terminal",
+    "generate_graphs",
+    "live_emotion_map",
+    "live_gaze_map",
+    "process_emotions",
+    "track_gaze",
+]
