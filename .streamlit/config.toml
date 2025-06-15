@@ -1,0 +1,11 @@
+[theme]
+base="dark"
+primaryColor="#CC0229"             # Azul (para botões primários e destaques)
+backgroundColor="#0F0F0F"          # Fundo geral (bem escuro)
+secondaryBackgroundColor="#222222" # Fundo de caixas e painéis
+textColor="#ffffff"                # Texto principal (branco)
+font="sans serif"
+
+# Personalizado para vermelho nos destaques (ex: sucessos, alertas, etc.)
+[theme.accent]
+successColor="#ff4b4b"             # Vermelho para alertas, análise finalizada etc.
