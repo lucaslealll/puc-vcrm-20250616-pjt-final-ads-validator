@@ -1,6 +1,6 @@
 # Ignore data files
 data/*.jpg
-data/*.mp4
+out/*.mp4
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
